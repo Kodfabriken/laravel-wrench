@@ -2,7 +2,6 @@
 
 namespace Kodfabriken\LaravelWrench;
 
-use Fico7489\Laravel\Pivot\Traits\PivotEventTrait;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Validator;
@@ -14,7 +13,6 @@ use Illuminate\Support\Facades\Validator;
  */
 abstract class KFModel extends Model
 {
-    use PivotEventTrait;
 
     /** @var array $validationRules */
     public static $validationRules;
@@ -43,7 +41,9 @@ abstract class KFModel extends Model
 
         foreach (static::$validationRules as $modelField => $groupDescriptors) {
             foreach ($groupDescriptors as $groupDescriptor => $groupRules) {
-                $groups = explode(',', $groupDescriptor);
+                if (!is_array($groups)) {
+                    $groups = explode(',', $groupDescriptor);
+                }
 
                 if (in_array($group, $groups)) {
                     if (!array_key_exists($modelField, $rules)) {
@@ -65,7 +65,7 @@ abstract class KFModel extends Model
         return null;
     }
 
-    public function userCanView(KFUser $user = null): boolean
+    public function userCanView(KFUser $user = null): bool
     {
         if ($parentModel = $this->inheritsPermissions()) {
             return $parentModel->userCanView($user);
@@ -74,7 +74,7 @@ abstract class KFModel extends Model
         return false;
     }
 
-    public function userCanUpdate(KFUser $user = null): boolean
+    public function userCanUpdate(KFUser $user = null): bool
     {
         if ($parentModel = $this->inheritsPermissions()) {
             return $parentModel->userCanUpdate($user);
@@ -83,7 +83,7 @@ abstract class KFModel extends Model
         return false;
     }
 
-    public function userCanDelete(KFUser $user = null): boolean
+    public function userCanDelete(KFUser $user = null): bool
     {
         if ($parentModel = $this->inheritsPermissions()) {
             return $parentModel->userCanDelete($user);
@@ -92,7 +92,7 @@ abstract class KFModel extends Model
         return false;
     }
 
-    public function userCanCreate(KFUser $user = null): boolean
+    public function userCanCreate(KFUser $user = null): bool
     {
         if ($parentModel = $this->inheritsPermissions()) {
             return $parentModel->userCanCreate($user);
