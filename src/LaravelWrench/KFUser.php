@@ -4,10 +4,11 @@ namespace Kodfabriken\LaravelWrench;
 
 use Illuminate\Foundation\Auth\User;
 use Laravel\Passport\HasApiTokens;
+use Illuminate\Notifications\Notifiable;
 
 class KFUser extends KFModel implements AuthenticatableContract, AuthorizableContract, CanResetPasswordContract
 {
-    use HasApiTokens, Notifiable, Authenticatable, Authorizable, CanResetPassword;
+    use HasApiTokens, Notifiable;
 
     protected $hidden = [
         'password'
