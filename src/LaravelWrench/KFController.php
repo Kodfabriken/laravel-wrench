@@ -48,8 +48,12 @@ class KFController extends BaseController
      * @param int $statusCode
      * @return \Illuminate\Http\JsonResponse
      */
-    protected function successResponse($data, $key, $statusCode = 200)
+    protected function successResponse($data = null, $key = null, $statusCode = 200)
     {
+        if ($data === null && $key === null) {
+            return response()->json();
+        }
+
         return response()->json([
             $key => $data
         ], $statusCode);
@@ -102,13 +106,13 @@ class KFController extends BaseController
         }
 
         if (!$model->userCanView($contextUser)) {
-            throw new \HttpResponseException($this->errorResponse(["Insufficient permissions"], 403));
+            throw new HttpResponseException($this->errorResponse(["Insufficient permissions"], 403));
         }
 
         return $model;
     }
 
-    protected function fetchRelated($baseModelClass, int $baseModelId, $relation, $relatedId, KFUser $contextUser = null): KFModel
+    protected function fetchRelatedModel($baseModelClass, int $baseModelId, $relation, $relatedId, KFUser $contextUser = null): KFModel
     {
         if ($contextUser === null) {
             $contextUser = $this->user;
@@ -124,7 +128,34 @@ class KFController extends BaseController
         }
 
         if (!$relatedModel->userCanView($contextUser)) {
-            throw new \HttpResponseException($this->errorResponse(["Insufficient permissions"], 403));
+            throw new HttpResponseException($this->errorResponse(["Insufficient permissions"], 403));
+        }
+
+        return $relatedModel;
+    }
+
+    protected function fetchNestedModel($baseModelClass, int $baseModelId, array $nestedRelationPath, KFUser $contextUser = null): KFModel
+    {
+        if ($contextUser === null) {
+            $contextUser = $this->user;
+        }
+
+        $baseModel = $this->fetchModel($baseModelClass, $baseModelId, $contextUser);
+
+        /** @var KFModel $relatedModel */
+        $relatedModel = $baseModel;
+
+        foreach ($nestedRelationPath as $relationName => $relatedId) {
+            /** @var KFModel $relatedModel */
+            $relatedModel = $relatedModel->$relationName()->find($relatedId);
+
+            if (!$relatedModel) {
+                throw new HttpResponseException($this->errorResponse("{$relationName} not found", 404));
+            }
+        }
+
+        if (!$relatedModel->userCanView($contextUser)) {
+            throw new HttpResponseException($this->errorResponse(["Insufficient permissions"], 403));
         }
 
         return $relatedModel;
@@ -155,7 +186,7 @@ class KFController extends BaseController
         }
 
         if (!$model->userCanCreate($contextUser)) {
-            throw new \HttpResponseException($this->errorResponse(["Insufficient permissions"], 403));
+            throw new HttpResponseException($this->errorResponse(["Insufficient permissions"], 403));
         }
 
         $model->save();
@@ -188,7 +219,7 @@ class KFController extends BaseController
         }
 
         if (!$model->userCanUpdate($contextUser)) {
-            throw new \HttpResponseException($this->errorResponse(["Insufficient permissions"], 403));
+            throw new HttpResponseException($this->errorResponse(["Insufficient permissions"], 403));
         }
 
         $model->save();
@@ -224,12 +255,98 @@ class KFController extends BaseController
 
         $this->validateModel($relatedModel, $fillableValues, $validationGroup);
 
-        // Quick and dirty way to validate that we are allowed to create the related model
-        // TODO: add permissions checking
-
         /** @var KFModel $newModel */
-        $newModel = $relation->create($fillableValues);
+        $newModel = new $relatedModel();
+        $newModel->fill($fillableValues);
+        $newModel->setAttribute($relation->getForeignKeyName(), $baseModelId);
+
+        if (!$newModel->userCanCreate($contextUser)) {
+            throw new HttpResponseException($this->errorResponse(["Insufficient permissions"], 403));
+        }
+
+        $newModel->save();
 
         return $newModel;
+    }
+
+    /**
+     * @param $modelClass
+     * @param int $modelId
+     * @param array $fillableValues
+     * @param array $nonFillableValues
+     * @param string $validationGroup
+     * @return KFModel
+     */
+    protected function deleteModel($modelClass, int $modelId, KFUser $contextUser = null): KFModel
+    {
+        if ($contextUser === null) {
+            $contextUser = $this->user;
+        }
+
+        /** @var KFModel $model */
+        $model = $this->fetchModel($modelClass, $modelId, $contextUser);
+
+        if (!$model->userCanDelete($contextUser)) {
+            throw new HttpResponseException($this->errorResponse(["Insufficient permissions"], 403));
+        }
+
+        $model->delete();
+
+        return $model;
+    }
+
+    /**
+     * @param $baseModelClass
+     * @param int $baseModelId
+     * @param $relationName
+     * @param $relatedId
+     * @param KFUser|null $contextUser
+     */
+    protected function deleteRelatedModel($baseModelClass, int $baseModelId, $relationName, $relatedId, KFUser $contextUser = null)
+    {
+        if ($contextUser === null) {
+            $contextUser = $this->user;
+        }
+
+        /** @var KFModel $relatedModel */
+        $relatedModel = $this->fetchRelatedModel($baseModelClass, $baseModelId, $relationName, $relatedId, $contextUser);
+
+        if (!$relatedModel->userCanDelete($contextUser)) {
+            throw new HttpResponseException($this->errorResponse(["Insufficient permissions"], 403));
+        }
+
+        $relatedModel->delete();
+    }
+
+    /**
+     * @param $baseModelClass
+     * @param int $baseModelId
+     * @param $relationName
+     * @param $relatedId
+     * @param array $fillableValues
+     * @param array $nonFillableValues
+     * @param string $validationGroup
+     * @param KFUser|null $contextUser
+     */
+    protected function patchRelatedModel($baseModelClass, int $baseModelId, $relationName, $relatedId, array $fillableValues, array $nonFillableValues = [], $validationGroup = 'update', KFUser $contextUser = null)
+    {
+        if ($contextUser === null) {
+            $contextUser = $this->user;
+        }
+
+        $relatedModel = $this->fetchRelatedModel($baseModelClass, $baseModelId, $relationName, $relatedId, $contextUser);
+
+        if (!$relatedModel->userCanUpdate($contextUser)) {
+            throw new HttpResponseException($this->errorResponse(["Insufficient permissions"], 403));
+        }
+
+        $model->validate(array_merge($fillableValues, $nonFillableValues), $validationGroup);
+        $model->fill($fillableValues);
+
+        foreach ($nonFillableValues as $key => $value) {
+            $model->$key = $value;
+        }
+
+        $model->save();
     }
 }
