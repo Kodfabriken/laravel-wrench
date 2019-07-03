@@ -41,11 +41,11 @@ abstract class KFModel extends Model
 
         foreach (static::$validationRules as $modelField => $groupDescriptors) {
             foreach ($groupDescriptors as $groupDescriptor => $groupRules) {
-                if (!is_array($groups)) {
-                    $groups = explode(',', $groupDescriptor);
+                if (!is_array($groupDescriptor)) {
+                    $groupDescriptor = explode(',', $groupDescriptor);
                 }
 
-                if (in_array($group, $groups)) {
+                if (in_array($group, $groupDescriptor)) {
                     if (!array_key_exists($modelField, $rules)) {
                         $rules[$modelField] = [];
                     }
