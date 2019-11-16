@@ -211,7 +211,9 @@ class KFController extends BaseController
         /** @var KFModel $model */
         $model = $this->fetchModel($modelClass, $modelId, $contextUser);
 
-        $model->validate(array_merge($fillableValues, $nonFillableValues), $validationGroup);
+        if ($errors = $model->validate(array_merge($fillableValues, $nonFillableValues), $validationGroup)) {
+            throw new HttpResponseException($this->errorResponse($errors, 400));
+        }
         $model->fill($fillableValues);
 
         foreach ($nonFillableValues as $key => $value) {
@@ -340,7 +342,9 @@ class KFController extends BaseController
             throw new HttpResponseException($this->errorResponse(["Insufficient permissions"], 403));
         }
 
-        $model->validate(array_merge($fillableValues, $nonFillableValues), $validationGroup);
+        if ($errors = $model->validate(array_merge($fillableValues, $nonFillableValues), $validationGroup)) {
+            throw new HttpResponseException($this->errorResponse($errors, 400));
+        }
         $model->fill($fillableValues);
 
         foreach ($nonFillableValues as $key => $value) {
