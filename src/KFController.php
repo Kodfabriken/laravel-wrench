@@ -1,6 +1,6 @@
 <?php
 
-namespace Kodfabriken\LaravelWrench;
+namespace LaravelWrench;
 
 use Illuminate\Database\Eloquent\Relations\HasOneOrMany;
 use Illuminate\Foundation\Bus\DispatchesJobs;
