@@ -1,6 +1,6 @@
 <?php
 
-namespace Kodfabriken\LaravelWrench;
+namespace LaravelWrench;
 
 use Illuminate\Foundation\Auth\User;
 use Illuminate\Support\Facades\Hash;
