@@ -1,6 +1,6 @@
 <?php
 
-namespace Kodfabriken\LaravelWrench;
+namespace LaravelWrench;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
