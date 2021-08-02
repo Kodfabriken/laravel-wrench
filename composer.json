@@ -9,7 +9,7 @@
     ],
     "autoload": {
         "psr-4": {
-            "Kodfabriken\\LaravelWrench\\": "src/"
+            "LaravelWrench\\": "src/"
         }
     },
     "require": {
